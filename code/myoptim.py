@@ -1,26 +1,32 @@
-"""Optimization settings: batch size, number of epochs, optimizer."""
 
+import math
 import torch
 
-# Used by the notebook.
-BATCH_SIZE = 32     # number of images in a mini-batch
-NUM_EPOCHS = 200    # number of passes over the training data
-
+BATCH_SIZE = 32
+NUM_EPOCHS = 500
 
 def get_optimizer(model):
-    """Create the optimizer that updates the parameters of `model`.
+    lr = 5e-4
+    eta_min = 1e-5
+    decay_end = 300
 
-    The choice of the optimizer and of its settings (learning rate, ...) is
-    yours.
-
-    Args:
-        model: the VAE defined in mymodel.py.
-
-    Returns:
-        a torch.optim.Optimizer.
-    """
-    optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-5)
-    optimizer.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=NUM_EPOCHS, eta_min=1e-5
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=lr,
+        weight_decay=1e-5
     )
+
+    def lr_lambda(epoch):
+        t = min(epoch, decay_end)
+        return (
+            eta_min / lr
+            + (1 - eta_min / lr)
+            * (1 + math.cos(math.pi * t / decay_end)) / 2
+        )
+
+    optimizer.scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer,
+        lr_lambda=lr_lambda
+    )
+
     return optimizer
